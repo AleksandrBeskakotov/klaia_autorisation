@@ -8,24 +8,21 @@ import { Alert } from '@material-ui/lab';
 const Login = () => {
     
     const [email, setEmail] = useState({
-        email: '',
-        error: false,
-        errorMessage: ''
+        value: '',
+        error: ''
     }); 
     const [password, setPassword] = useState({
-        password: '',
-        error: false,
-        errorMessage: ''
+        value: '',
+        error: ''
+    });
+    const [errorMessage, setErrorMessage] = useState({
+        value: ''
     });
     const [showPasswordSymbols, setShowPasswordSymbols] = useState(false);
-    const [errorMessage, setErrorMessage] = useState({
-        error: false,
-        message: ''
-    }); 
-
+    const [newSingInLoading, setNewSingInLoading] = useState(false)
+    
     const checkEmail = (email) => {
-        const checkParams = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;//eslint-disable-line
-        console.log(checkParams.test(String(email).toLowerCase()));
+        const checkParams = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;//eslint-disable-line   
         return checkParams.test(String(email).toLowerCase());
     }
 
@@ -34,47 +31,44 @@ const Login = () => {
             const res = await apiClient.post("/user/sessions", {
             session:{
                 platform_type: 'web'
-            },email: email.email,password: password.password});
-            console.log(res);
+            }, email: email.value, password: password.value});
             }
             
         catch (error) {
-            setErrorMessage(
-                {
-                    error: true, 
-                    message: error.response.data.error.message
-                });
-            console.log(error.response.data.error.message);
-            }
+            setNewSingInLoading(false);
+            setErrorMessage({
+                value: error.response.data.error.message
+            });
+        }
     }
 
     const clearErrors = () => {
-        setErrorMessage(({error: false, message: ""}));
-        setEmail({...email, errorMessage: "", error: false});
-        setPassword({...password, errorMessage: "", error:false});
+        setErrorMessage(({value: ''}));
+        setEmail({...email, error: ''});
+        setPassword({...password, error: ''});
     }
 
     const  singIn = (e) => {
         e.preventDefault();
         clearErrors();
+        let hasError = false;
         
-        
-        if (!checkEmail(email.email)) {
-            setEmail(({...email, errorMessage: "Invalid email", error: true}));
+        if (!checkEmail(email.value)) {
+            hasError = true;
+            setEmail(({...email, error: "Invalid email"}));
         } 
-        if (password.password.length < 5) {
-            setPassword({...password, errorMessage: "Password cannot be empty or <5 characters", error: true});
+        if (password.value.length < 5) {
+            hasError = true
+            setPassword({...password, error: "Password cannot be empty or <5 characters"});
         } 
-        
-        if (checkEmail(email.email) && password.password.length > 5) {
-            postData();
-        }
-        console.log(email, password);
+        if (hasError) return;
+
+        setNewSingInLoading(true);
+        postData();
     }
 
     const handleClickShowPassword = () => {
         setShowPasswordSymbols(!showPasswordSymbols);
-        console.log(email, password);
     }    
 
     const classes = useStyles();
@@ -90,18 +84,18 @@ const Login = () => {
                 label="Email" 
                 variant="outlined" 
                 type="email"
-                value={email.email}
-                onChange={(e) => {setEmail({...email, email: e.target.value})}}
+                value={email.value}
+                onChange={(e) => {setEmail({...email, value: e.target.value})}}
                 error={email.error}
-                helperText={email.errorMessage}
+                helperText={email.error}
             />
             <FormControl  className={classes.textField} variant="outlined">
                 <InputLabel htmlFor="outlined-adornment-password">Password</InputLabel>
                 <OutlinedInput
                     id="outlined-adornment-password"
                     type={showPasswordSymbols ? 'text' : 'password'}
-                    value={password.password}
-                    onChange={(e) => {setPassword({...password, password: e.target.value})}}
+                    value={password.value}
+                    onChange={(e) => {setPassword({...password, value: e.target.value})}}
                     label="Password"
                     error={password.error}
                     endAdornment={
@@ -116,10 +110,10 @@ const Login = () => {
                     </InputAdornment>
                     }            
                 />
-                <FormHelperText className={classes.formHelperText} id="outlined-weight-helper-text">{password.errorMessage}</FormHelperText>
+                <FormHelperText className={classes.formHelperText} id="outlined-weight-helper-text">{password.error}</FormHelperText>
             </FormControl >
-            <Button type="Submit"  size='large' className={classes.signInButton} variant="contained">Sign In</Button>
-            {errorMessage.error && <Alert className={classes.alert} severity="error">{errorMessage.message}</Alert>}
+            <Button type="Submit" disabled={newSingInLoading}  size='large' className={classes.signInButton} variant="contained">Sign In</Button>
+            {errorMessage.value && <Alert className={classes.alert} severity="error">{errorMessage.value}</Alert>}
         </form>
     </Container>
     )
